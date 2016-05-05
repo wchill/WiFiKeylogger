@@ -24,14 +24,15 @@ Adafruit_WINC1500 WiFi(WINC_CS, WINC_IRQ, WINC_RST);
 //Adafruit_WINC1500 WiFi;
 
 #define STAT_LED 13
-char ssid[] = "IllinoisNet_Devices";     //  your network SSID (name)
-char pass[] = "Illinois";    // your network password (use for WPA, or use as key for WEP)
+char ssid[] = "xXSwaggernautsXx";     //  your network SSID (name)
+char pass[] = "chillywilly";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 
-// IPAddress host(104,131,69,59);
-char host[] = "www.intense.io";
+IPAddress host(172,20,10,8);
+//char host[] = "www.intense.io";
 int port = 31337;
-char *debughost = host;
+//char *debughost = host;
+IPAddress debughost = host;
 int debugport = 31338;
 
 // Initialize the Ethernet client library
@@ -48,6 +49,8 @@ bool connect_in_progress;
 
 uint16_t max_transfer_time = 50;
 uint8_t command_buffer[128];
+uint8_t last_modifiers = 0;
+uint8_t keyboard_modifiers = 0;
 
 void addToLog(char *output);
 
@@ -84,6 +87,7 @@ void setup() {
 
   // Begin serial communications with USB keyboard emulator
   Serial1.begin(9600);
+  //Serial1.write(CMD_START);
 
   // Assumes WPA/WPA2 network, attempt to connect
   last_connect_attempt = millis();
@@ -196,20 +200,42 @@ void printWifiStatus() {
   client.println(" dBm");
 }
 
-void keyPressed() {
-  handler.pressed();
+void controlKeysChanged() {
+  uint8_t cmd = (uint8_t) (CMD_CHANGEMOD & 0xFF);
+  Serial1.write(cmd);
+  int key = handler.getModifiers();
+  uint8_t buf[2];
+  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
+  buf[1] = (uint8_t) (key & 0xFF);
+  Serial1.write(buf[0]);
+  Serial1.write(buf[1]);
 }
 
+void keyPressed() {
+  //handler.pressed();
+  uint8_t cmd = (uint8_t) (CMD_PRESS & 0xFF);
+  Serial1.write(cmd);
+  int key = handler.getOemKey();
+  uint8_t buf[2];
+  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
+  buf[1] = (uint8_t) (key & 0xFF);
+  Serial1.write(buf[0]);
+  Serial1.write(buf[1]);
+}
 void keyReleased() {
-  handler.released();
+  //handler.released();
+  uint8_t cmd = (uint8_t) (CMD_RELEASE & 0xFF);
+  Serial1.write(cmd);
+  int key = handler.getOemKey();
+  uint8_t buf[2];
+  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
+  buf[1] = (uint8_t) (key & 0xFF);
+  Serial1.write(buf[0]);
+  Serial1.write(buf[1]);
 }
 
 void addToLog(char *output) {
-    debug.write(output, strlen(output));
-    /*
-  for (int i = 0; i < strlen(output); ++i) {
-    logBuffer.add(output[i]);
-  }
-  */
+  debug.write(output, strlen(output));
+  debug.flush();
 }
 
