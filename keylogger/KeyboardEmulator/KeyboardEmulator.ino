@@ -3,7 +3,37 @@
 #define CMD_RELEASE   0x02
 #define CMD_CHANGEMOD 0x04
 
-uint8_t modifiers;
+#define USB_LED_NUM_LOCK 1
+#define USB_LED_CAPS_LOCK 2
+#define USB_LED_SCROLL_LOCK 4
+#define USB_LED_COMPOSE 8
+#define USB_LED_KANA 16
+
+#include "CircularBuffer.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void usb_keyboard_write(uint8_t c);
+void usb_keyboard_write_unicode(uint16_t cpoint);
+void usb_keyboard_press_keycode(uint16_t n);
+void usb_keyboard_release_keycode(uint16_t n);
+void usb_keyboard_release_all(void);
+int usb_keyboard_press(uint8_t key, uint8_t modifier);
+int usb_keyboard_send(void);
+extern uint8_t keyboard_modifier_keys;
+extern uint8_t keyboard_media_keys;
+extern uint8_t keyboard_keys[6];
+extern uint8_t keyboard_protocol;
+extern uint8_t keyboard_idle_config;
+extern uint8_t keyboard_idle_count;
+extern volatile uint8_t keyboard_leds;
+#ifdef __cplusplus
+}
+#endif
+
+uint8_t packet[3];
+CircularBuffer<uint8_t> buf;
 
 void setup() {
   pinMode(13, OUTPUT);
@@ -11,53 +41,70 @@ void setup() {
   Serial1.begin(9600);
   Serial.begin(9600);
   Keyboard.begin();
-
-  delay(1000);
-  
-  Serial.println("Hello world!");
   digitalWrite(13, LOW);
 }
 
+void serialEvent1() {
+  while(Serial1.available()) {
+    buf.add(Serial1.read());
+  }
+}
+
+void pressRaw(uint8_t key) {
+  if(keyboard_keys[0] != key &&
+     keyboard_keys[1] != key &&
+     keyboard_keys[2] != key && 
+     keyboard_keys[3] != key && 
+     keyboard_keys[4] != key && 
+     keyboard_keys[5] != key) {
+    for(int i = 0; i < 6; i++) {
+      if(keyboard_keys[i] == 0) {
+          keyboard_keys[i] = key;
+          break;
+      }
+    }
+    Keyboard.send_now();
+  }
+}
+
+void releaseRaw(uint8_t key) {
+  for(int i = 0; i < 6; i++) {
+      if(key != 0 && keyboard_keys[i] == key) {
+          keyboard_keys[i] = 0;
+      }
+  }
+  Keyboard.send_now();
+}
+
 void loop() {
-  //if(Serial1.available() > 0) {
-  
-    while(!Serial1.available());
+  if(buf.getNumEntries() >= 3) {
     digitalWrite(13, HIGH);
-    Serial.println("Reading");
-    uint8_t command = Serial1.read();
-    Serial.println("Data1");
-    while(!Serial1.available());
-    uint8_t d_high = Serial1.read();
-    Serial.println("Data2");
-    while(!Serial1.available());
-    uint8_t d_low = Serial1.read();
-    //uint16_t data = (d_high >> 8) | (d_low);
-    Serial.println("Handling");
-    //data = KEY_A;
-    switch(command) {
+    buf.remove(packet, 3);
+    switch(packet[0]) {
       case CMD_CHANGEMOD:
-        Serial.println("Modifiers changed");
-        Keyboard.set_modifier(d_low);
+        Keyboard.set_modifier(packet[2]);
+        Keyboard.send_now();
         break;
       case CMD_PRESS:
-        Serial.print("Pressed ");
-        Serial.print(d_high, HEX);
-        Serial.println(d_low, HEX);
-        Keyboard.pressRaw(d_low);
+        pressRaw(packet[2]);
         break;
       case CMD_RELEASE:
-        Serial.print("Released ");
-        Serial.print(d_high, HEX);
-        Serial.println(d_low, HEX);
-        Keyboard.releaseRaw(d_low);
+        releaseRaw(packet[2]);
         break;
       default:
-        Serial.println("Unknown cmd");
         break;
     }
-    
-    Serial.flush();
     digitalWrite(13, LOW);
-  //}
+  }
+  /*
+  if (keyboard_leds & USB_LED_CAPS_LOCK)
+  {
+      digitalWrite(13, HIGH);
+  }
+  else
+  {
+      digitalWrite(13, LOW);
+  }
+  */
 }
 

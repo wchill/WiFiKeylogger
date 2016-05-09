@@ -16,25 +16,27 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+// Replaces KeyboardController.h, adds callback function for modifier 
+
 #ifndef KEYBOARD_CONTROLLER_H
 #define KEYBOARD_CONTROLLER_H
 
 #include <hidboot.h>
 
 enum KeyboardModifiers {
-    LeftCtrl = 1,
-    LeftShift = 2,
-    Alt = 4,
-    LeftCmd = 8,
-    RightCtrl = 16,
-    RightShift = 32,
-    AltGr = 64,
-    RightCmd = 128
+  LeftCtrl = 1,
+  LeftShift = 2,
+  Alt = 4,
+  LeftCmd = 8,
+  RightCtrl = 16,
+  RightShift = 32,
+  AltGr = 64,
+  RightCmd = 128
 };
 
-class KeyboardController : public KeyboardReportParser {
+class RawKeyboardController : public KeyboardReportParser {
 public:
-  KeyboardController(USBHost &usb) : hostKeyboard(&usb), key(0), keyOem(0), modifiers(0) {
+  RawKeyboardController(USBHost &usb) : hostKeyboard(&usb), key(0), keyOem(0), modifiers(0) {
     hostKeyboard.SetReportParser(0, this);
   };
 
@@ -45,7 +47,7 @@ public:
 protected:
   virtual void OnKeyDown(uint8_t mod, uint8_t key);
   virtual void OnKeyUp(uint8_t mod, uint8_t key);
-    virtual void OnControlKeysChanged(uint8_t before, uint8_t after);
+  virtual void OnControlKeysChanged(uint8_t before, uint8_t after);
 
 private:
   HIDBoot<HID_PROTOCOL_KEYBOARD> hostKeyboard;

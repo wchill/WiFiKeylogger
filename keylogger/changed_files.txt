@@ -1,5 +1,0 @@
-Below files must be replaced with versions in this repo for this code to compile
-~/Library/Arduino15/packages/adafruit/hardware/samd/1.0.8/libraries/USBHost/src/KeyboardController.cpp
-~/Library/Arduino15/packages/adafruit/hardware/samd/1.0.8/libraries/USBHost/src/KeyboardController.h
-~/Downloads/Arduino.app/Contents/Java/hardware/teensy/avr/cores/teensy3/usb_keyboard.c
-~/Downloads/Arduino.app/Contents/Java/hardware/teensy/avr/cores/teensy3/usb_keyboard.h

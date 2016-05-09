@@ -1,5 +1,5 @@
 #pragma once
-#define CIRCULAR_BUFFER_SIZE 1024
+#define CIRCULAR_BUFFER_SIZE 2048
 #define BUFFER_SIZE_MASK (CIRCULAR_BUFFER_SIZE - 1)
 
 template<typename T>
