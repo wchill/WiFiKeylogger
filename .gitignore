@@ -28,3 +28,8 @@
 *.app
 
 .DS_Store
+
+# Python stuff
+*.pyc
+*.pyd
+venv
