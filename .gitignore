@@ -33,3 +33,4 @@
 *.pyc
 *.pyd
 venv
+log.txt

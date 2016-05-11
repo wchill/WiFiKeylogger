@@ -6,9 +6,9 @@ template<typename T>
 class CircularBuffer {
   private:
     T data[CIRCULAR_BUFFER_SIZE];
-    unsigned int readIndex = 0;
-    unsigned int writeIndex = 0;
-    unsigned int numEntries = 0;
+    volatile unsigned int readIndex = 0;
+    volatile unsigned int writeIndex = 0;
+    volatile unsigned int numEntries = 0;
 
   public:
     CircularBuffer() {}

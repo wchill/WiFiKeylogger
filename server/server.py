@@ -5,6 +5,21 @@ from twisted.internet import reactor
 import sys
 import datetime
 
+class Tee(object):
+    def __init__(self, name, mode):
+        self.f= open(name, mode)
+        self.stdout = sys.stdout
+        sys.stdout = self
+    def __del__(self):
+        sys.stdout = self.stdout
+        self.f.close()
+    def write(self, data):
+        self.f.write(data)
+        self.stdout.write(data)
+    def flush(self):
+        self.f.flush()
+        self.stdout.flush()
+
 class EchoServer(LineReceiver):
 
     def __init__(self, factory):
@@ -42,18 +57,18 @@ class EchoServerFactory(Factory):
         self.clients = []
 
     def startFactory(self):
-        self.log = open('log.txt', 'a')
-        sys.stdout = self.log
         print('Opening log at {}'.format(datetime.datetime.now()))
 
     def stopFactory(self):
         print('Closing log at {}'.format(datetime.datetime.now()))
+        self.log.flush()
         self.log.close()
 
     def buildProtocol(self, addr):
         return EchoServer(self)
 
 def main():
+    t = Tee('log.txt', 'a')
     reactor.listenTCP(31337, EchoServerFactory())
     reactor.listenTCP(31338, EchoServerFactory())
     print('Control server running on 31337')
