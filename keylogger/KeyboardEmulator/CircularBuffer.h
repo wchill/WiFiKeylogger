@@ -32,6 +32,7 @@ class CircularBuffer {
           case 1:   data[(writeIndex++) & BUFFER_SIZE_MASK] = *buf++;
         }while(--n>0);
       }
+      numEntries += len;
     }
     T peek() {
       return data[(readIndex) & BUFFER_SIZE_MASK];

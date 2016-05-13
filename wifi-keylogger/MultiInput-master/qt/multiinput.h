@@ -41,13 +41,13 @@ private slots:
 private:
     struct PACKET {
        //char metadata; //metadata
-       char key; //actual key
+       char *key; //actual key
        char press_rel; //press/release
        QDateTime time;
     } packet;
 
     QFile* openFile();
-    void writetoFile(PACKET *buf, int index);
+    void writetoFile(PACKET buf);
     void enableConnect();
     void enableDisconnect();
     void updatePressedKeys(QKeyEvent *event);

@@ -3,6 +3,7 @@
 #ifdef USE_LCD
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(A5, A4, A3, A2, A1, A0);
+int line = 0;
 #endif
 
 #include <SPI.h>
@@ -36,7 +37,7 @@ char pass[] = "chillywilly";    // your network password (use for WPA, or use as
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 
 // Change below hosts and ports as necessary
-IPAddress host(172,16,103,57);
+IPAddress host(172,16,210,1);
 //char host[] = "";
 int port = 31337;
 //char *debughost = host;
@@ -52,16 +53,8 @@ CircularBuffer<uint8_t> inputBuffer;
 uint32_t last_connect_attempt;
 bool connect_in_progress;
 
-uint16_t max_transfer_time = 50;
-uint8_t command_buffer[128];
 uint8_t last_modifiers = 0;
 uint8_t keyboard_modifiers = 0;
-
-void addToLog(char *output);
-
-#ifdef USE_LCD
-int line = 0;
-#endif
 
 extern "C" char *sbrk(int i);
  
@@ -81,6 +74,10 @@ void halt() {
     digitalWrite(STAT_LED, LOW);
     delay(100);
   }
+}
+
+void addToLog(char *output) {
+  logBuffer.add(output);
 }
 
 void setup() {
@@ -133,14 +130,15 @@ void setup() {
   lcd.setCursor(0, 3);
   lcd.print("     /32768");
   #endif
+  
   // Change below line if using unsecured or WEP network (not recommended)
   WiFi.beginAsync(ssid, pass);
-  //setupWDT(11);
 }
 
 unsigned long lastTime = millis();
 char strbuf[16];
 
+// Loop will execute about every 5ms
 void loop() {
   unsigned long t = lastTime;
   lastTime = millis();
@@ -152,9 +150,9 @@ void loop() {
   sprintf(strbuf, "%05d/32768", FreeRam());
   lcd.print(strbuf);
   
-  lcd.setCursor(13, 3);
+  lcd.setCursor(16, 3);
   int delta = (int) lastTime - t;
-  sprintf(strbuf, "%05dms", delta);
+  sprintf(strbuf, "%02dms", delta);
   lcd.print(strbuf);
   #endif
   
@@ -192,11 +190,14 @@ void loop() {
       connect_in_progress = true;
       WiFi.beginAsync(ssid, pass);
   }
-  
+
   if(isConnected() && logBuffer.getNumEntries() > 0) {
     char *str = logBuffer.peek();
     size_t err = debug.writeAsync((uint8_t*)str, strlen(str));
-    if(err >= 0) logBuffer.remove();
+    if(err >= 0) {
+      // Write successful, remove from circular buffer
+      logBuffer.remove();
+    }
   }
 
   // handle incoming commands from the server
@@ -205,14 +206,15 @@ void loop() {
     int bytesRead = client.read(socketBuf, 128);
     inputBuffer.add(socketBuf, bytesRead);
   }
-  while(inputBuffer.getNumEntries() >= 3) {
-    uint8_t command[3];
-    inputBuffer.remove(command, 3);
+  while(inputBuffer.getNumEntries() >= 4) {
+    uint8_t command[4];
+    inputBuffer.remove(command, 4);
     switch(command[0]) {
       case CMD_PRESS:
       case CMD_RELEASE:
       case CMD_CHANGEMOD:
         Serial1.write(command, 3);
+        logBuffer.add("ACK\r\n");
         break;
       default:
         break;
@@ -254,7 +256,7 @@ void keyPressed() {
   command[1] = (uint8_t) ((key & 0xFF00) >> 8);
   command[2] = (uint8_t) (key & 0xFF);
   Serial1.write(command, 3);
-  handler.released(key & 0xFF);
+  handler.pressed(key & 0xFF);
 }
 void keyReleased() {
   int key = handler.getOemKey();
@@ -263,10 +265,6 @@ void keyReleased() {
   command[1] = (uint8_t) ((key & 0xFF00) >> 8);
   command[2] = (uint8_t) (key & 0xFF);
   Serial1.write(command, 3);
-  handler.pressed(key & 0xFF);
-}
-
-void addToLog(char *output) {
-  logBuffer.add(output);
+  handler.released(key & 0xFF);
 }
 

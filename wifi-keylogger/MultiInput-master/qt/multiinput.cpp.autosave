@@ -34,8 +34,181 @@ MultiInput::MultiInput(QWidget *parent) :
     tcpSocket = new QTcpSocket(this);
     connect(tcpSocket, SIGNAL(connected()), this, SLOT(socketConnected()));
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readStream()));
-    //connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-    //        this, SLOT(displayError(QAbstractSocket::SocketError)));
+    connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(displayError(QAbstractSocket::SocketError)));
+
+    keyRemap[0x41] = 0x04; // Keyboard a and A
+    keyRemap[0x42] = 0x05; // Keyboard b and B
+    keyRemap[0x43] = 0x06; // Keyboard c and C
+    keyRemap[0x44] = 0x07; // Keyboard d and D
+    keyRemap[0x45] = 0x08; // Keyboard e and E
+    keyRemap[0x46] = 0x09; // Keyboard f and F
+    keyRemap[0x47] = 0x0A; // Keyboard g and G
+    keyRemap[0x48] = 0x0B; // Keyboard h and H
+    keyRemap[0x49] = 0x0C; // Keyboard i and I
+    keyRemap[0x4a] = 0x0D; // Keyboard j and J
+    keyRemap[0x4b] = 0x0E; // Keyboard k and K
+    keyRemap[0x4c] = 0x0F; // Keyboard l and L
+    keyRemap[0x4d] = 0x10; // Keyboard m and M
+    keyRemap[0x4e] = 0x11; // Keyboard n and N
+    keyRemap[0x4f] = 0x12; // Keyboard o and O
+    keyRemap[0x50] = 0x13; // Keyboard p and P
+    keyRemap[0x51] = 0x14; // Keyboard q and Q
+    keyRemap[0x52] = 0x15; // Keyboard r and R
+    keyRemap[0x53] = 0x16; // Keyboard s and S
+    keyRemap[0x54] = 0x17; // Keyboard t and T
+    keyRemap[0x55] = 0x18; // Keyboard u and U
+    keyRemap[0x56] = 0x19; // Keyboard v and V
+    keyRemap[0x57] = 0x1A; // Keyboard w and W
+    keyRemap[0x58] = 0x1B; // Keyboard x and X
+    keyRemap[0x59] = 0x1C; // Keyboard y and Y
+    keyRemap[0x5a] = 0x1D; // Keyboard z and Z
+    keyRemap[0x31] = 0x1E; // Keyboard 1 and !
+    keyRemap[0x32] = 0x1F; // Keyboard 2 and @
+    keyRemap[0x33] = 0x20; // Keyboard 3 and #
+    keyRemap[0x34] = 0x21; // Keyboard 4 and $
+    keyRemap[0x35] = 0x22; // Keyboard 5 and %
+    keyRemap[0x36] = 0x23; // Keyboard 6 and ^
+    keyRemap[0x37] = 0x24; // Keyboard 7 and &
+    keyRemap[0x38] = 0x25; // Keyboard 8 and *
+    keyRemap[0x39] = 0x26; // Keyboard 9 and (
+    keyRemap[0x30] = 0x27; // Keyboard 0 and )
+    keyRemap[0x1000004] = 0x28; // Keyboard Return (ENTER)
+    keyRemap[0x1000000] = 0x29; // Keyboard ESCAPE
+    keyRemap[0x1000003] = 0x2A; // Keyboard DELETE (Backspace)
+    //keyRemap[] = 0x2B; // Keyboard Tab
+    keyRemap[0x20] = 0x2C; // Keyboard Spacebar
+    keyRemap[0x2d] = 0x2D; // Keyboard - and (underscore)
+    keyRemap[0x3d] = 0x2E; // Keyboard = and +
+    keyRemap[0x5b] = 0x2F; // Keyboard [ and {
+    keyRemap[0x5d] = 0x30; // Keyboard ] and }
+    keyRemap[0x5c] = 0x31; // Keyboard \ and |
+    keyRemap[0x3b] = 0x33; // Keyboard ; and :
+    keyRemap[0x27] = 0x34; // Keyboard ' and "
+    keyRemap[0x60] = 0x35; // Keyboard Grave Accent and Tilde
+    keyRemap[0x2c] = 0x36; // Keyboard, and <
+    keyRemap[0x2e] = 0x37; // Keyboard . and >
+    keyRemap[0x2f] = 0x38; // Keyboard / and ?
+    keyRemap[0x1000024] = 0x39; // Keyboard Caps Lock
+    keyRemap[0x1000030] = 0x3A; // Keyboard F1
+    keyRemap[0x1000031] = 0x3B; // Keyboard F2
+    keyRemap[0x1000032] = 0x3C; // Keyboard F3
+    keyRemap[0x1000033] = 0x3D; // Keyboard F4
+    keyRemap[0x1000034] = 0x3E; // Keyboard F5
+    keyRemap[0x1000035] = 0x3F; // Keyboard F6
+    keyRemap[0x1000036] = 0x40; // Keyboard F7
+    keyRemap[0x1000037] = 0x41; // Keyboard F8
+    keyRemap[0x1000038] = 0x42; // Keyboard F9
+    keyRemap[0x1000039] = 0x43; // Keyboard F10
+    keyRemap[0x100003a] = 0x44; // Keyboard F11
+    keyRemap[0x100003b] = 0x45; // Keyboard F12
+    /*
+    keyRemap[] = 0x46; // Keyboard PrintScreen
+    keyRemap[] = 0x47; // Keyboard Scroll Lock
+    keyRemap[] = 0x48; // Keyboard Pause
+    keyRemap[] = 0x49; // Keyboard Insert
+    keyRemap[] = 0x4A; // Keyboard Home
+    keyRemap[] = 0x4B; // Keyboard PageUp
+    keyRemap[] = 0x4C; // Keyboard Delete Forward
+    keyRemap[] = 0x4D; // Keyboard End
+    keyRemap[] = 0x4E; // Keyboard PageDown
+    keyRemap[] = 0x4F; // Keyboard RightArrow
+    keyRemap[] = 0x50; // Keyboard LeftArrow
+    keyRemap[] = 0x51; // Keyboard DownArrow
+    keyRemap[] = 0x52; // Keyboard UpArrow
+    keyRemap[] = 0x53; // Keypad Num Lock and Clear
+    keyRemap[] = 0x54; // Keypad /
+    keyRemap[] = 0x55; // Keypad *
+    keyRemap[] = 0x56; // Keypad -
+    keyRemap[] = 0x57; // Keypad +
+    keyRemap[] = 0x58; // Keypad ENTER
+    keyRemap[] = 0x59; // Keypad 1 and End
+    keyRemap[] = 0x5A; // Keypad 2 and Down Arrow
+    keyRemap[] = 0x5B; // Keypad 3 and PageDn
+    keyRemap[] = 0x5C; // Keypad 4 and Left Arrow
+    keyRemap[] = 0x5D; // Keypad 5
+    keyRemap[] = 0x5E; // Keypad 6 and Right Arrow
+    keyRemap[] = 0x5F; // Keypad 7 and Home
+    keyRemap[] = 0x60; // Keypad 8 and Up Arrow
+    keyRemap[] = 0x61; // Keypad 9 and PageUp
+    keyRemap[] = 0x62; // Keypad 0 and Insert
+    keyRemap[] = 0x63; // Keypad . and Delete
+    keyRemap[] = 0x64; // Keyboard Non-US \ and |
+    keyRemap[] = 0x65; // Keyboard Application
+    keyRemap[] = 0x66; // Keyboard Power
+    keyRemap[] = 0x67; // Keypad =
+    keyRemap[] = 0x68; // Keyboard F13
+    keyRemap[] = 0x69; // Keyboard F14
+    keyRemap[] = 0x6A; // Keyboard F15
+    keyRemap[] = 0x6B; // Keyboard F16
+    keyRemap[] = 0x6C; // Keyboard F17
+    keyRemap[] = 0x6D; // Keyboard F18
+    keyRemap[] = 0x6E; // Keyboard F19
+    keyRemap[] = 0x6F; // Keyboard F20
+    keyRemap[] = 0x70; // Keyboard F21
+    keyRemap[] = 0x71; // Keyboard F22
+    keyRemap[] = 0x72; // Keyboard F23
+    keyRemap[] = 0x73; // Keyboard F24
+    keyRemap[] = 0x74; // Keyboard Execute
+    keyRemap[] = 0x75; // Keyboard Help
+    keyRemap[] = 0x76; // Keyboard Menu
+    keyRemap[] = 0x77; // Keyboard Select
+    keyRemap[] = 0x78; // Keyboard Stop
+    keyRemap[] = 0x79; // Keyboard Again
+    keyRemap[] = 0x7A; // Keyboard Undo
+    keyRemap[] = 0x7B; // Keyboard Cut
+    keyRemap[] = 0x7C; // Keyboard Copy
+    keyRemap[] = 0x7D; // Keyboard Paste
+    keyRemap[] = 0x7E; // Keyboard Find
+    keyRemap[] = 0x7F; // Keyboard Mute
+    keyRemap[] = 0x80; // Keyboard Volume Up
+    keyRemap[] = 0x81; // Keyboard Volume Down
+    keyRemap[] = 0x82; // Keyboard Locking Caps Lock
+    keyRemap[] = 0x83; // Keyboard Locking Num Lock
+    keyRemap[] = 0x84; // Keyboard Locking Scroll Lock
+    keyRemap[] = 0x85; // Keypad Comma
+    keyRemap[] = 0x86; // Keypad Equal Sign
+    keyRemap[] = 0x87; // Keyboard International1
+    keyRemap[] = 0x88; // Keyboard International2
+    keyRemap[] = 0x89; // Keyboard International3
+    keyRemap[] = 0x8A; // Keyboard International4
+    keyRemap[] = 0x8B; // Keyboard International5
+    keyRemap[] = 0x8C; // Keyboard International6
+    keyRemap[] = 0x8D; // Keyboard International7
+    keyRemap[] = 0x8E; // Keyboard International8
+    keyRemap[] = 0x8F; // Keyboard International9
+    keyRemap[] = 0x90; // Keyboard LANG1
+    keyRemap[] = 0x91; // Keyboard LANG2
+    keyRemap[] = 0x92; // Keyboard LANG3
+    keyRemap[] = 0x93; // Keyboard LANG4
+    keyRemap[] = 0x94; // Keyboard LANG5
+    keyRemap[] = 0x95; // Keyboard LANG6
+    keyRemap[] = 0x96; // Keyboard LANG7
+    keyRemap[] = 0x97; // Keyboard LANG8
+    keyRemap[] = 0x98; // Keyboard LANG9
+    keyRemap[] = 0x99; // Keyboard Alternate Erase
+    keyRemap[] = 0x9A; // Keyboard SysReq/Attention
+    keyRemap[] = 0x9B; // Keyboard Cancel
+    keyRemap[] = 0x9C; // Keyboard Clear
+    keyRemap[] = 0x9D; // Keyboard Prior
+    keyRemap[] = 0x9E; // Keyboard Return
+    keyRemap[] = 0x9F; // Keyboard Separator
+    keyRemap[] = 0xA0; // Keyboard Out
+    keyRemap[] = 0xA1; // Keyboard Oper
+    keyRemap[] = 0xA2; // Keyboard Clear/Again
+    keyRemap[] = 0xA3; // Keyboard CrSel/Props
+    keyRemap[] = 0xA4; // Keyboard ExSel
+    */
+    keyRemap[0x1000022] = 0xE0; // Keyboard LeftControl
+    keyRemap[0x1000020] = 0xE1; // Keyboard LeftShift
+    keyRemap[0x1000023] = 0xE2; // Keyboard LeftAlt
+    keyRemap[0x1000021] = 0xE3; // Keyboard Left GUI
+    /*
+    keyRemap[] = 0xE4; // Keyboard RightControl
+    keyRemap[] = 0xE5; // Keyboard RightShift
+    keyRemap[] = 0xE6; // Keyboard RightAlt
+    keyRemap[] = 0xE7; // Keyboard Right GUI
+    */
 }
 
 int MultiInput::QtToDirectInput(qint64 key) {
@@ -50,7 +223,6 @@ int MultiInput::QtToDirectInput(qint64 key) {
 void MultiInput::socketConnected()
 {
     ui->keyEventLog->append("Connected to host");
-    tcpSocket->write("hello\r\n");
     enableDisconnect();
 }
 
@@ -66,41 +238,31 @@ void MultiInput::updatePressedKeys(QKeyEvent *event)
     QString str = "";
     for(auto it = keys.begin(); it != keys.end(); it++) {
         if((*it).second)
-            str += QKeySequence((*it).first).toString() + " ";
-            //str += "0x" + QString::number((*it).first, 16) + " ";
+            //str += QKeySequence((*it).first).toString() + " ";
+            str += "0x" + QString::number((*it).first, 16) + " ";
     }
     ui->keysPressed->setText(str);
 }
-/*
-QFile* MultiInput::openFile()
-{
-    QFile *file = new QFile("C:/logfile.txt");
-    return file;
-}
-*/
 void MultiInput::readStream()
 {
     QDataStream in(tcpSocket);
     in.setVersion(QDataStream::Qt_4_0);
-    PACKET packetbuf[30000];
     PACKET packet;
-    qint64 index = 0;
-    while(tcpSocket->bytesAvailable() >= 2) {
-        char ch;
-        int bytesRead = tcpSocket->read(&ch, sizeof(ch));
-        if (bytesRead == sizeof(ch)) {
-            packet.key = ch;
+    char networkBuffer[4096];
+    while(tcpSocket->canReadLine()) {
+        int bytesRead = tcpSocket->readLine(networkBuffer, sizeof(networkBuffer));
+        if (bytesRead > 0 && networkBuffer[bytesRead - 1] == '\n') {
+            if(networkBuffer[0] == 'p') {
+                packet.press_rel = '1';
+            } else {
+                packet.press_rel = '0';
+            }
+            networkBuffer[bytesRead - 1] = 0;
+            packet.time = QDateTime::currentDateTime();
+            packet.key = &(networkBuffer[2]);
+            writetoFile(packet);
         }
-        bytesRead = tcpSocket->read(&ch, sizeof(ch));
-        if (bytesRead == sizeof(ch)) {
-            packet.press_rel = ch;
-        }
-        packet.time = QDateTime::currentDateTime();
-        packetbuf[index] = packet;
-        index++;
     }
-    writetoFile(packetbuf, index);
-    index = 0;
 }
 
 MultiInput::~MultiInput()
@@ -108,41 +270,34 @@ MultiInput::~MultiInput()
     delete ui;
 }
 
-void MultiInput::writetoFile(PACKET *buf, int index)
+void MultiInput::writetoFile(PACKET buf)
 {
         //open file
-        QString outputFilename = "C:/QT/Results1.txt";
+        QString outputFilename = "log.txt";
         QFile outputFile(outputFilename);
         if (outputFile.exists())
             outputFile.open(QIODevice::WriteOnly | QIODevice::Append);
         else
             outputFile.open(QIODevice::WriteOnly);
 
-    //    if(!outputFile.isOpen()){
-    //        qDebug() << "- Error, unable to open" << outputFilename << "for output";
-    //    }
+        if(!outputFile.isOpen()){
+            qDebug() << "- Error, unable to open" << outputFilename << "for output";
+        }
 
         //make file stream
         QTextStream outStream(&outputFile);
-        //QString pr;
         QDateTime time;
-        for(int i=0; i<index-1; i++)
+        qDebug() << buf.key;
+        outStream << buf.key << "  ";
+        time = buf.time;
+        if(buf.press_rel == '0'){
+            outStream << "release" << "  " << time.toString() << endl;
+            qDebug() << "release" << "  " << time.toString() << endl;
+        }
+        else
         {
-            qDebug() << buf[i].key;
-            outStream << buf[i].key << "  ";
-            time = buf[i].time;
-            if(buf[i].press_rel == '0'){
-                outStream << "release" << "  " << time.toString() << endl;
-                qDebug() << "release" << "  " << time.toString() << endl;
-            }
-            else
-            {
-                outStream << "press" << "  " << time.toString() << endl;
-                qDebug() << "press" << "  " << time.toString() << endl;
-            }
-
-            //qDebug() << pr << time.toString();
-            //outStream << pr << "  " << time.toString() << endl;
+            outStream << "press" << "  " << time.toString() << endl;
+            qDebug() << "press" << "  " << time.toString() << endl;
         }
 
         outputFile.close();
@@ -156,7 +311,7 @@ void MultiInput::keyPressEvent(QKeyEvent *event)
         int k = QtToDirectInput(event->key());
         if(k != -1) {
             char buf[32];
-            buf[0] = '+';
+            buf[0] = 0x01;
             buf[1] = (char) k;
             buf[2] = '\r';
             buf[3] = '\n';
@@ -174,7 +329,7 @@ void MultiInput::keyReleaseEvent(QKeyEvent *event)
         int k = QtToDirectInput(event->key());
         if(k != -1) {
             char buf[32];
-            buf[0] = '-';
+            buf[0] = 0x02;
             buf[1] = (char) k;
             buf[2] = '\r';
             buf[3] = '\n';

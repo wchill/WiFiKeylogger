@@ -20,6 +20,6 @@ HEADERS  += multiinput.h
 FORMS    += multiinput.ui
 
 CONFIG += c++11 static
-QMAKE_CXXFLAGS += -std=c++11 #-stdlib=libc++ -mmacosx-version-min=10.7
-QMAKE_LFLAGS += -Xlinker -Bstatic
-#LIBS += -stdlib=libc++ -mmacosx-version-min=10.7
+QMAKE_CXXFLAGS += -std=c++11 -stdlib=libc++ -mmacosx-version-min=10.7
+#QMAKE_LFLAGS += -Xlinker
+LIBS += -stdlib=libc++ -mmacosx-version-min=10.7
